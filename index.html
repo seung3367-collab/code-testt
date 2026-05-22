@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Director Profile & System Architecture</title>
+    <style>
+        :root {
+            --bg-color: #0a0a0c;
+            --panel-bg: #121214;
+            --accent-color: #4f46e5;
+            --text-main: #e4e4e7;
+            --text-muted: #a1a1aa;
+            --border-color: #27272a;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            margin: 0;
+            padding: 40px 20px;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        header {
+            margin-bottom: 40px;
+            border-bottom: 2px solid var(--border-color);
+            padding-bottom: 20px;
+        }
+
+        h1 {
+            font-size: 2rem;
+            font-weight: 700;
+            margin: 0 0 10px 0;
+            letter-spacing: -0.05em;
+        }
+
+        .subtitle {
+            color: var(--text-muted);
+            font-size: 1.1rem;
+            margin: 0;
+        }
+
+        /*--- 수정된 애니메이션 시스템 스펙 ---*/
+        .visual-container {
+            width: 100%;
+            height: 200px;
+            background-color: var(--panel-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            margin-bottom: 40px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* 왼쪽 오프셋에서 오른쪽 끝까지 부드러운 무한 이동 (6초 루프) */
+        .stage-wrapper {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            animation: translateStage 6s linear infinite;
+        }
+
+        .svg-stickman {
+            position: absolute;
+            bottom: 20px;
+            left: -120px; /* 프레임 밖에서 시작 */
+            width: 120px;
+            height: 120px;
+        }
+
+        /* 지면 트랙 고정 */
+        .ground-line {
+            position: absolute;
+            bottom: 30px;
+            width: 100%;
+            height: 1px;
+            background-color: var(--border-color);
+        }
+
+        /* SVG 관절 애니메이션 핵심 정의 */
+        .left-leg {
+            transform-origin: 50px 60px;
+            animation: legSwingLeft 0.6s ease-in-out infinite alternate;
+        }
+
+        .right-leg {
+            transform-origin: 50px 60px;
+            animation: legSwingRight 0.6s ease-in-out infinite alternate;
+        }
+
+        .arms {
+            transform-origin: 50px 40px;
+            animation: armSwing 0.6s ease-in-out infinite alternate;
+        }
+
+        .body-group {
+            animation: bodyBob 0.3s ease-in-out infinite alternate;
+        }
+
+        /*--- 타임라인 및 역학 데이터 (Keyframes) ---*/
+        @keyframes translateStage {
+            0% { transform: translateX(0%); }
+            100% { transform: translateX(120%); }
+        }
+
+        @keyframes legSwingLeft {
+            0% { transform: rotate(-35deg); }
+            100% { transform: rotate(35deg); }
+        }
+
+        @keyframes legSwingRight {
+            0% { transform: rotate(35deg); }
+            100% { transform: rotate(-35deg); }
+        }
+
+        @keyframes armSwing {
+            0% { transform: rotate(-10deg); }
+            100% { transform: rotate(15deg); }
+        }
+
+        @keyframes bodyBob {
+            0% { transform: translateY(0px); }
+            100% { transform: translateY(4px); } /* 달릴 때 상하 반동 구현 */
+        }
+
+        section {
+            margin-bottom: 40px;
+        }
+
+        h2 {
+            font-size: 1.3rem;
+            border-left: 4px solid var(--accent-color);
+            padding-left: 12px;
+            margin-bottom: 20px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        th {
+            color: var(--text-muted);
+            font-weight: 500;
+            width: 30%;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .card {
+            background-color: var(--panel-bg);
+            border: 1px solid var(--border-color);
+            padding: 20px;
+            border-radius: 6px;
+        }
+
+        .card h3 {
+            margin-top: 0;
+            font-size: 1.1rem;
+            color: var(--text-main);
+        }
+
+        ul {
+            margin: 0;
+            padding-left: 20px;
+            color: var(--text-muted);
+        }
+
+        li {
+            margin-bottom: 8px;
+        }
+
+        li strong {
+            color: var(--text-main);
+        }
+
+        footer {
+            text-align: center;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-top: 60px;
+            border-top: 1px solid var(--border-color);
+            padding-top: 20px;
+            font-family: monospace;
+        }
+
+        @media (max-width: 600px) {
+            .grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1>IDENTITY MATRIX</h1>
+        <p class="subtitle">Cinematographer & Editor / INTP-A</p>
+    </header>
+
+    <!-- 검증 완료된 SVG 스틱맨 애니메이션 영역 -->
+    <div class="visual-container">
+        <div class="stage-wrapper">
+            <svg class="svg-stickman" viewBox="0 0 100 100">
+                <!-- 01. 왼다리 (기저 레이어) -->
+                <line class="left-leg" x1="50" y1="60" x2="35" y2="90" stroke="#e4e4e7" stroke-width="4" stroke-linecap="round"/>
+                
+                <!-- 02. 오른다리 -->
+                <line class="right-leg" x1="50" y1="60" x2="65" y2="90" stroke="#e4e4e7" stroke-width="4" stroke-linecap="round"/>
+                
+                <!-- 03. 상체 구조 (상하 반동 연동) -->
+                <g class="body-group">
+                    <!-- 척추 -->
+                    <line x1="50" y1="35" x2="50" y2="60" stroke="#e4e4e7" stroke-width="4" stroke-linecap="round"/>
+                    <!-- 머리 -->
+                    <circle cx="50" cy="23" r="8" fill="none" stroke="#e4e4e7" stroke-width="4"/>
+                    
+                    <!-- 팔 & 카메라 시스템 -->
+                    <g class="arms">
+                        <!-- 앞팔 -->
+                        <polyline points="50,40 65,45 75,40" fill="none" stroke="#e4e4e7" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+                        <!-- 시네마 카메라 하우징 바디 및 렌즈 -->
+                        <rect x="75" y="30" width="16" height="12" rx="1" fill="#4f46e5" />
+                        <polygon points="91,33 97,30 97,42 91,39" fill="#a1a1aa" />
+                        <rect x="79" y="26" width="8" height="4" fill="#e4e4e7" /> <!-- 상단 핸들 -->
+                    </g>
+                </g>
+            </svg>
+        </div>
+        <div class="ground-line"></div>
+    </div>
+
+    <!-- 하드웨어/기본 정보 -->
+    <section>
+        <h2>01. Core Specifications</h2>
+        <table>
+            <tr>
+                <th>Age / Status</th>
+                <td>30 / Active</td>
+            </tr>
+            <tr>
+                <th>Primary Role</th>
+                <td>Cinematographer (촬영 감독) & Editor (편집자)</td>
+            </tr>
+            <tr>
+                <th>Cognitive Type</th>
+                <td>INTP (논리적인 사색가)</td>
+            </tr>
+            <tr>
+                <th>Core Value</th>
+                <td>최대 효율성 (Efficiency Optimization), 지적 확장</td>
+            </tr>
+        </table>
+    </section>
+
+    <!-- 프로세스/성향 정보 -->
+    <section>
+        <div class="grid">
+            <div class="card">
+                <h3>02. Operating Architecture</h3>
+                <ul>
+                    <li><strong>철학적 접근:</strong> 현상의 본질적 구조 분석 및 프레이밍 원칙 수립</li>
+                    <li><strong>과학적 사실 기반:</strong> 감정적 가치 배제, 데이터와 물리적 광학 법칙에 근거한 추론</li>
+                    <li><strong>텍스트 선호도:</strong> 수식어 없는 구조화된 데이터(표, 리스트) 중심의 정보 처리</li>
+                </ul>
+            </div>
+            <div class="card">
+                <h3>03. Communication Protocol</h3>
+                <ul>
+                    <li><strong>결론 우선:</strong> 종속적인 서론 생략, 핵심 결과값 선행 도출</li>
+                    <li><strong>담백함 & 직설성:</strong> 불필요한 감정적 겉치레 및 수식어 완전 배제</li>
+                    <li><strong>논리적 반론:</strong> 단순 수용보다 다각적 검증을 통한 사고 확장을 지향</li>
+                </ul>
+            </div>
+        </div>
+    </section>
+
+    <footer>
+        SYS.STATUS: ONLINE // REF: 2026-05-22
+    </footer>
+</div>
+
+</body>
+</html>
