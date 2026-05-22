@@ -1,17 +1,37 @@
 <!DOCTYPE html>
-<html lang="ko">
+<html lang="ko" data-theme="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Director Profile & System Architecture</title>
     <style>
-        :root {
+        :root,
+        [data-theme="dark"] {
             --bg-color: #0a0a0c;
             --panel-bg: #121214;
             --accent-color: #4f46e5;
             --text-main: #e4e4e7;
             --text-muted: #a1a1aa;
             --border-color: #27272a;
+            --stick-stroke: #e4e4e7;
+            --camera-lens: #a1a1aa;
+            --toggle-bg: transparent;
+            --toggle-border: #3f3f46;
+            --toggle-icon: #a1a1aa;
+        }
+
+        [data-theme="light"] {
+            --bg-color: #fafafa;
+            --panel-bg: #ffffff;
+            --accent-color: #4f46e5;
+            --text-main: #18181b;
+            --text-muted: #71717a;
+            --border-color: #e4e4e7;
+            --stick-stroke: #27272a;
+            --camera-lens: #71717a;
+            --toggle-bg: transparent;
+            --toggle-border: #d4d4d8;
+            --toggle-icon: #52525b;
         }
 
         body {
@@ -21,6 +41,55 @@
             margin: 0;
             padding: 40px 20px;
             line-height: 1.6;
+            transition: background-color 0.25s ease, color 0.25s ease;
+        }
+
+        .theme-toggle {
+            position: fixed;
+            top: 16px;
+            right: 16px;
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 36px;
+            height: 36px;
+            padding: 0;
+            border: 1px solid var(--toggle-border);
+            border-radius: 50%;
+            background: var(--toggle-bg);
+            color: var(--toggle-icon);
+            cursor: pointer;
+            transition: border-color 0.2s ease, color 0.2s ease;
+        }
+
+        .theme-toggle:hover {
+            color: var(--text-main);
+            border-color: var(--text-muted);
+        }
+
+        .theme-toggle:focus-visible {
+            outline: 2px solid var(--accent-color);
+            outline-offset: 2px;
+        }
+
+        .theme-toggle svg {
+            width: 16px;
+            height: 16px;
+            fill: none;
+            stroke: currentColor;
+            stroke-width: 1.75;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+
+        .theme-toggle .icon-sun,
+        [data-theme="light"] .theme-toggle .icon-moon {
+            display: none;
+        }
+
+        [data-theme="light"] .theme-toggle .icon-sun {
+            display: block;
         }
 
         .container {
@@ -57,6 +126,7 @@
             margin-bottom: 40px;
             position: relative;
             overflow: hidden;
+            transition: background-color 0.25s ease, border-color 0.25s ease;
         }
 
         /* 왼쪽 오프셋에서 오른쪽 끝까지 부드러운 무한 이동 (6초 루프) */
@@ -73,6 +143,28 @@
             left: -120px; /* 프레임 밖에서 시작 */
             width: 120px;
             height: 120px;
+            color: var(--stick-stroke);
+        }
+
+        .svg-stickman line,
+        .svg-stickman circle,
+        .svg-stickman polyline {
+            stroke: currentColor;
+        }
+
+        .svg-stickman .camera-body {
+            fill: var(--accent-color);
+            stroke: none;
+        }
+
+        .svg-stickman .camera-lens {
+            fill: var(--camera-lens);
+            stroke: none;
+        }
+
+        .svg-stickman .camera-handle {
+            fill: currentColor;
+            stroke: none;
         }
 
         /* 지면 트랙 고정 */
@@ -87,17 +179,32 @@
         /* SVG 관절 애니메이션 핵심 정의 */
         .left-leg {
             transform-origin: 50px 60px;
-            animation: legSwingLeft 0.6s ease-in-out infinite alternate;
+            animation: thighSwingLeft 0.6s ease-in-out infinite alternate;
+        }
+
+        .left-shin {
+            transform-origin: 38px 75px;
+            animation: kneeSwingLeft 0.6s ease-in-out infinite alternate;
         }
 
         .right-leg {
             transform-origin: 50px 60px;
-            animation: legSwingRight 0.6s ease-in-out infinite alternate;
+            animation: thighSwingRight 0.6s ease-in-out infinite alternate;
         }
 
-        .arms {
+        .right-shin {
+            transform-origin: 62px 75px;
+            animation: kneeSwingRight 0.6s ease-in-out infinite alternate;
+        }
+
+        .arm-left {
             transform-origin: 50px 40px;
-            animation: armSwing 0.6s ease-in-out infinite alternate;
+            animation: armSwingLeft 0.6s ease-in-out infinite alternate;
+        }
+
+        .camera-rig {
+            transform-origin: 54px 36px;
+            animation: cameraBob 0.6s ease-in-out infinite alternate;
         }
 
         .body-group {
@@ -110,19 +217,34 @@
             100% { transform: translateX(120%); }
         }
 
-        @keyframes legSwingLeft {
-            0% { transform: rotate(-35deg); }
-            100% { transform: rotate(35deg); }
+        @keyframes thighSwingLeft {
+            0% { transform: rotate(-28deg); }
+            100% { transform: rotate(22deg); }
         }
 
-        @keyframes legSwingRight {
-            0% { transform: rotate(35deg); }
-            100% { transform: rotate(-35deg); }
+        @keyframes kneeSwingLeft {
+            0% { transform: rotate(52deg); }
+            100% { transform: rotate(8deg); }
         }
 
-        @keyframes armSwing {
-            0% { transform: rotate(-10deg); }
-            100% { transform: rotate(15deg); }
+        @keyframes thighSwingRight {
+            0% { transform: rotate(22deg); }
+            100% { transform: rotate(-28deg); }
+        }
+
+        @keyframes kneeSwingRight {
+            0% { transform: rotate(8deg); }
+            100% { transform: rotate(52deg); }
+        }
+
+        @keyframes armSwingLeft {
+            0% { transform: rotate(18deg); }
+            100% { transform: rotate(-22deg); }
+        }
+
+        @keyframes cameraBob {
+            0% { transform: rotate(-4deg); }
+            100% { transform: rotate(2deg); }
         }
 
         @keyframes bodyBob {
@@ -172,6 +294,7 @@
             border: 1px solid var(--border-color);
             padding: 20px;
             border-radius: 6px;
+            transition: background-color 0.25s ease, border-color 0.25s ease;
         }
 
         .card h3 {
@@ -213,6 +336,16 @@
 </head>
 <body>
 
+<button type="button" class="theme-toggle" id="theme-toggle" aria-label="다크 모드로 전환" title="테마 전환">
+    <svg class="icon-moon" viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+    </svg>
+    <svg class="icon-sun" viewBox="0 0 24 24" aria-hidden="true">
+        <circle cx="12" cy="12" r="4"/>
+        <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/>
+    </svg>
+</button>
+
 <div class="container">
     <header>
         <h1>IDENTITY MATRIX</h1>
@@ -223,27 +356,41 @@
     <div class="visual-container">
         <div class="stage-wrapper">
             <svg class="svg-stickman" viewBox="0 0 100 100">
-                <!-- 01. 왼다리 (기저 레이어) -->
-                <line class="left-leg" x1="50" y1="60" x2="35" y2="90" stroke="#e4e4e7" stroke-width="4" stroke-linecap="round"/>
-                
-                <!-- 02. 오른다리 -->
-                <line class="right-leg" x1="50" y1="60" x2="65" y2="90" stroke="#e4e4e7" stroke-width="4" stroke-linecap="round"/>
-                
+                <!-- 01. 왼다리: 허벅지 + 무릎 + 종아리 -->
+                <g class="left-leg">
+                    <line class="left-thigh" x1="50" y1="60" x2="38" y2="75" stroke-width="4" stroke-linecap="round"/>
+                    <g class="left-shin">
+                        <line x1="38" y1="75" x2="30" y2="92" stroke-width="4" stroke-linecap="round"/>
+                    </g>
+                </g>
+
+                <!-- 02. 오른다리: 허벅지 + 무릎 + 종아리 -->
+                <g class="right-leg">
+                    <line class="right-thigh" x1="50" y1="60" x2="62" y2="75" stroke-width="4" stroke-linecap="round"/>
+                    <g class="right-shin">
+                        <line x1="62" y1="75" x2="70" y2="92" stroke-width="4" stroke-linecap="round"/>
+                    </g>
+                </g>
+
                 <!-- 03. 상체 구조 (상하 반동 연동) -->
                 <g class="body-group">
                     <!-- 척추 -->
-                    <line x1="50" y1="35" x2="50" y2="60" stroke="#e4e4e7" stroke-width="4" stroke-linecap="round"/>
+                    <line x1="50" y1="35" x2="50" y2="60" stroke-width="4" stroke-linecap="round"/>
                     <!-- 머리 -->
-                    <circle cx="50" cy="23" r="8" fill="none" stroke="#e4e4e7" stroke-width="4"/>
-                    
-                    <!-- 팔 & 카메라 시스템 -->
-                    <g class="arms">
-                        <!-- 앞팔 -->
-                        <polyline points="50,40 65,45 75,40" fill="none" stroke="#e4e4e7" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
-                        <!-- 시네마 카메라 하우징 바디 및 렌즈 -->
-                        <rect x="75" y="30" width="16" height="12" rx="1" fill="#4f46e5" />
-                        <polygon points="91,33 97,30 97,42 91,39" fill="#a1a1aa" />
-                        <rect x="79" y="26" width="8" height="4" fill="#e4e4e7" /> <!-- 상단 핸들 -->
+                    <circle cx="50" cy="23" r="8" fill="none" stroke-width="4"/>
+
+                    <!-- 왼팔: 보행 시 자연스러운 스윙 -->
+                    <g class="arm-left">
+                        <line x1="50" y1="40" x2="34" y2="54" stroke-width="4" stroke-linecap="round"/>
+                    </g>
+
+                    <!-- 오른팔 + 어깨 멘 카메라 -->
+                    <g class="camera-rig">
+                        <line x1="50" y1="40" x2="56" y2="36" stroke-width="4" stroke-linecap="round"/>
+                        <line class="camera-strap" x1="44" y1="38" x2="56" y2="34" stroke-width="2" stroke-linecap="round" opacity="0.55"/>
+                        <rect class="camera-body" x="48" y="26" width="18" height="11" rx="1"/>
+                        <polygon class="camera-lens" points="66,28 72,25 72,38 66,35"/>
+                        <rect class="camera-handle" x="52" y="22" width="7" height="4"/>
                     </g>
                 </g>
             </svg>
@@ -300,6 +447,41 @@
         SYS.STATUS: ONLINE // REF: 2026-05-22
     </footer>
 </div>
+
+<script>
+(function () {
+    'use strict';
+
+    var STORAGE_KEY = 'identity-matrix-theme';
+    var root = document.documentElement;
+    var toggle = document.getElementById('theme-toggle');
+
+    function applyTheme(theme) {
+        root.setAttribute('data-theme', theme);
+        toggle.setAttribute('aria-label', theme === 'dark' ? '라이트 모드로 전환' : '다크 모드로 전환');
+        toggle.setAttribute('title', theme === 'dark' ? '라이트 모드' : '다크 모드');
+    }
+
+    function initTheme() {
+        var saved = localStorage.getItem(STORAGE_KEY);
+        if (saved === 'light' || saved === 'dark') {
+            applyTheme(saved);
+            return;
+        }
+        if (window.matchMedia('(prefers-color-scheme: light)').matches) {
+            applyTheme('light');
+        }
+    }
+
+    toggle.addEventListener('click', function () {
+        var next = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+        applyTheme(next);
+        localStorage.setItem(STORAGE_KEY, next);
+    });
+
+    initTheme();
+})();
+</script>
 
 </body>
 </html>
